@@ -32,10 +32,14 @@ namespace Jattac.Libs.Profiling
             proxyInstance._decorated = decorated;
 
             var classAttr = decorated.GetType().GetCustomAttribute<MeasureExecutionTimeAttribute>();
+            var interfaceAttr = typeof(T).GetCustomAttribute<MeasureExecutionTimeAttribute>();
 
-            proxyInstance._measureAllMethods = classAttr != null;
-            proxyInstance._logSummary = classAttr?.LogSummary ?? false;
-            proxyInstance._trackSlowest = classAttr?.TrackSlowest ?? false;
+            // Class attribute takes precedence over interface attribute
+            var effectiveAttr = classAttr ?? interfaceAttr;
+
+            proxyInstance._measureAllMethods = effectiveAttr != null;
+            proxyInstance._logSummary = effectiveAttr?.LogSummary ?? false;
+            proxyInstance._trackSlowest = effectiveAttr?.TrackSlowest ?? false;
 
             return (T)proxy;
         }
@@ -44,7 +48,15 @@ namespace Jattac.Libs.Profiling
         {
             if (targetMethod == null) throw new ArgumentNullException(nameof(targetMethod));
 
-            bool shouldMeasure = _measureAllMethods || targetMethod.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null;
+            // Find the corresponding method on the implementation class
+            var implementationMethod = _decorated.GetType().GetMethod(targetMethod.Name,
+                targetMethod.GetParameters().Select(p => p.ParameterType).ToArray());
+
+            bool hasMethodAttribute = targetMethod.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null ||
+                                     (implementationMethod?.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null);
+
+            bool shouldMeasure = _measureAllMethods || hasMethodAttribute;
+
             if (!shouldMeasure)
             {
                 return targetMethod.Invoke(_decorated, args);

@@ -18,27 +18,32 @@ namespace Jattac.Libs.Profiling
             var config = new ExecutionTimeConfig();
             configuration.GetSection("ExecutionTime").Bind(config);
 
-            var types = assembliesToScan.SelectMany(a => a.GetTypes());
+            var types = assembliesToScan.SelectMany(a => a.GetTypes()).ToList();
+            var interfaces = types.Where(t => t.IsInterface);
 
-            var interfacesWithAttribute = types
-                .Where(t => t.IsInterface && t.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null);
-
-            foreach (var interfaceType in interfacesWithAttribute)
+            foreach (var interfaceType in interfaces)
             {
                 var implementationType = types.FirstOrDefault(t => t.IsClass && !t.IsAbstract && interfaceType.IsAssignableFrom(t));
                 if (implementationType != null)
                 {
-                    if (config.EnableTiming)
+                    bool hasAttribute = interfaceType.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null ||
+                                        implementationType.GetCustomAttribute<MeasureExecutionTimeAttribute>() != null;
+
+                    if (hasAttribute)
                     {
-                        var method = typeof(ExecutionTimeProxyExtensions)
-                            .GetMethod(nameof(ProfileScoped))
-                            .MakeGenericMethod(interfaceType, implementationType);
-                        
-                        method.Invoke(null, new object[] { services, configuration });
-                    }
-                    else
-                    {
-                        services.AddScoped(interfaceType, implementationType);
+                        if (config.EnableTiming)
+                        {
+                            var method = typeof(ExecutionTimeProxyExtensions)
+                                .GetMethod(nameof(ProfileScoped))
+                                .MakeGenericMethod(interfaceType, implementationType);
+
+                            method.Invoke(null, new object[] { services, configuration });
+                        }
+                        else
+                        {
+                            // If profiling is disabled, register the service normally without the proxy
+                            services.AddScoped(interfaceType, implementationType);
+                        }
                     }
                 }
             }

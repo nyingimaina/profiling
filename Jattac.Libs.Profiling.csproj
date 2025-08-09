@@ -7,7 +7,7 @@
 
     <!-- NuGet Package Details -->
     <PackageId>Jattac.Libs.Profiling</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Jattac</Authors>
     <Company>Jattac</Company>
     <Description>A lightweight, dependency-injection-friendly library for profiling method execution times in .NET applications using a dynamic proxy and attributes.</Description>
@@ -16,10 +16,25 @@
     <PackageProjectUrl>https://github.com/nyingimaina/profiling.git</PackageProjectUrl>
     <RepositoryUrl>https://github.com/nyingimaina/profiling.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+
+    <!-- Source Link and Symbol Configuration -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
+    <None Include="icon.png" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="8.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All"/>
   </ItemGroup>
 
 </Project>

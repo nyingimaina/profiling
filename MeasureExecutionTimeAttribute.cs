@@ -2,7 +2,7 @@ namespace Jattac.Libs.Profiling
 {
     using System;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Interface)]
 public class MeasureExecutionTimeAttribute : Attribute
 {
     public bool LogSummary { get; }

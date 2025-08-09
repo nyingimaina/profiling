@@ -7,7 +7,7 @@ This tool allows you to non-invasively measure the performance of specific metho
 ## Features
 
 -   **Automatic Service Discovery:** Scans your assemblies to find and register services for profiling with a single command.
--   **Attribute-Based:** Simply add an attribute to your interfaces to start profiling.
+-   **Flexible Attribute-Based Control:** Add an attribute to interfaces, classes, or methods to control profiling.
 -   **DI Integration:** Easily registers profiled services with your `IServiceCollection`.
 -   **Async Support:** Seamlessly profiles both synchronous and asynchronous (Task-based) methods.
 -   **Configuration-Based:** Enable or disable profiling globally via your `appsettings.json` file.
@@ -33,22 +33,27 @@ Install-Package Jattac.Libs.Profiling
 
 ### 2. Apply the Attribute
 
-To mark services for profiling, add the `[MeasureExecutionTime]` attribute to the service's **interface**. The auto-discovery system works by finding interfaces with this attribute.
+To mark services for profiling, add the `[MeasureExecutionTime]` attribute. You can place it on an **interface**, a **class**, or an individual **method**.
 
+**Example:**
 ```csharp
 using Jattac.Libs.Profiling;
 
-[MeasureExecutionTime(logSummary: true, trackSlowest: true)]
+// You can place the attribute on the interface...
+[MeasureExecutionTime(logSummary: true)]
 public interface IMyService
 {
-    void DoFastWork();
-    Task DoSlowWorkAsync();
+    void DoWork();
+    
+    [MeasureExecutionTime(logSummary: false)] // Or on a specific method
+    Task DoSpecificWorkAsync();
 }
 
-public class MyService : IMyService
+// ...or you can place it on the class.
+[MeasureExecutionTime(trackSlowest: true)]
+public class MyOtherService : IMyOtherService 
 {
-    public void DoFastWork() => Thread.Sleep(50);
-    public async Task DoSlowWorkAsync() => await Task.Delay(200);
+    //...
 }
 ```
 
@@ -68,7 +73,7 @@ Add a section to your `appsettings.json` file to control whether profiling is en
 ```
 
 -   `EnableTiming: true`: Profiling is enabled.
--   `EnableTiming: false`: Profiling is disabled, and the services will be registered without the proxy, incurring no performance overhead.
+-   `EnableTiming: false`: Profiling is disabled, and services will be registered without the proxy, incurring no performance overhead.
 
 ### 4. Configure Your Services
 
@@ -81,7 +86,7 @@ using Jattac.Libs.Profiling;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Automatically find and register all profiled services
+// Automatically find and register all services marked for profiling
 // in the current assembly.
 builder.Services.AddProfiledServices(builder.Configuration);
 
@@ -90,15 +95,7 @@ builder.Services.AddProfiledServices(builder.Configuration);
 var app = builder.Build();
 ```
 
-By default, this method scans the assembly that calls it. You can also specify other assemblies to scan.
-
-```csharp
-// Scan the calling assembly and another specific assembly
-builder.Services.AddProfiledServices(
-    builder.Configuration,
-    typeof(SomeOtherProject.IMarker).Assembly
-);
-```
+The `AddProfiledServices` method will discover any service where the interface or the implementation class has the `[MeasureExecutionTime]` attribute.
 
 ### Manual Registration
 
@@ -115,8 +112,8 @@ When your application runs and the profiled methods are called, you will see out
 #### Individual Method Log
 
 ```
-14:25:10.152: Method MyService.DoFastWork took 52 ms
-14:25:10.355: Method MyService.DoSlowWorkAsync took 201 ms
+14:25:10.152: Method MyService.DoWork took 52 ms
+14:25:10.355: Method MyService.DoSpecificWorkAsync took 201 ms
 ```
 
 #### Slowest Calls Summary
@@ -124,8 +121,8 @@ When your application runs and the profiled methods are called, you will see out
 ```
 Top Execution Times (Slowest):
 -----------------------------
-| MyService.DoSlowWorkAsync |    201 ms |
-| MyService.DoFastWork      |     52 ms |
+| MyService.DoSpecificWorkAsync |    201 ms |
+| MyService.DoWork      |     52 ms |
 -----------------------------
 ```
 
@@ -136,8 +133,8 @@ Execution Summary:
 -------------------------------------------
 | Method Name         | Count |  Avg ms  | Min ms | Max ms |
 -------------------------------------------
-| MyService.DoSlowWorkAsync |     1 |     201 ms |    201 ms |    201 ms |
-| MyService.DoFastWork      |     1 |      52 ms |     52 ms |     52 ms |
+| MyService.DoSpecificWorkAsync |     1 |     201 ms |    201 ms |    201 ms |
+| MyService.DoWork      |     1 |      52 ms |     52 ms |     52 ms |
 -------------------------------------------
 ```
 
@@ -147,42 +144,23 @@ Please be aware of the following behaviors to ensure the library works as expect
 
 ### Dependency Injection: Attribute Wins
 
-If you use the `AddProfiledServices()` auto-discovery feature, it will register any interface decorated with `[MeasureExecutionTime]`. If you have also manually registered a service for that same interface, **the library's registration will overwrite yours.**
+If the auto-discovery feature finds a service marked for profiling, **it will overwrite any existing manual registration for that service.**
 
 This is an intentional design choice. The presence of the `[MeasureExecutionTime]` attribute is treated as the definitive source of truth, signaling a clear intent to profile the service.
 
-**Example:**
-```csharp
-// You manually register a service
-builder.Services.AddSingleton<IMyService, MyService>();
+### Attribute Placement and Precedence
 
-// You also call the auto-discovery method, and IMyService has the attribute
-builder.Services.AddProfiledServices(builder.Configuration);
+The library is flexible about where you place the `[MeasureExecutionTime]` attribute. Here is the order of precedence:
 
-// Result: IMyService will be registered as a Scoped, profiled service,
-// overwriting the manual Singleton registration.
-```
+*   **For enabling profiling on all methods of a service:** An attribute on the **class** takes precedence over an attribute on the **interface**.
+*   **For profiling a specific method:** An attribute on either the **class method** or the **interface method** will cause it to be profiled (if profiling isn't already enabled for the whole class).
+
+The `AddProfiledServices()` auto-discovery method will find services if the attribute is placed on either the interface or the class.
 
 ### Multiple Implementations
 
-The `AddProfiledServices()` auto-discovery feature is designed for scenarios where there is a **one-to-one mapping** between an interface and its implementation.
-
-If you have an interface with multiple implementations, the auto-discovery will only find and register the *first* one it encounters, which can be unpredictable.
-
-**In this scenario, you must use manual registration** for each implementation you wish to profile:
-```csharp
-// For interfaces with multiple implementations, register manually:
-builder.Services.ProfileScoped<IMyInterface, FirstImplementation>(builder.Configuration);
-// Note: You would need a way to distinguish which implementation to resolve,
-// which is outside the scope of this library.
-```
-
-### Attribute Placement for Auto-Discovery
-
-The `AddProfiledServices()` method discovers services by looking for the `[MeasureExecutionTime]` attribute on **interfaces only**.
-
-While the attribute can be placed on a concrete class, the auto-discovery method will ignore it. Attributes on classes will only be effective if you register the service manually using `ProfileScoped()`.
+The `AddProfiledServices()` auto-discovery feature is designed for scenarios where there is a **one-to-one mapping** between an interface and its implementation. If you have an interface with multiple implementations, you must use **manual registration** for each one.
 
 ### Service Lifetime
 
-All services registered by this library, whether through auto-discovery (`AddProfiledServices`) or manually (`ProfileScoped`), are registered with a **Scoped lifetime**.
+All services registered by this library, whether through auto-discovery or manually, are registered with a **Scoped lifetime**.
