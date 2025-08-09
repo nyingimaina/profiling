@@ -138,15 +138,25 @@ Execution Summary:
 -------------------------------------------
 ```
 
+## Limitations
+
+Please be aware of the following limitations when using this library:
+
+*   **No Private Method Profiling:** The proxy-based approach can only intercept calls to public methods on a service's interface. It cannot profile private, protected, or internal methods. For this, a more advanced, runtime-level profiler (like those in Visual Studio) is required.
+
+*   **Scoped Lifetime Only:** All services registered by this library (both automatically and manually) are forced into a **Scoped lifetime**. Singleton and Transient lifetimes are not supported.
+
+*   **One-to-One Mapping for Auto-Discovery:** The `AddProfiledServices()` auto-discovery feature is designed for scenarios where there is a one-to-one mapping between an interface and its implementation. If you have an interface with multiple implementations, you must use **manual registration** for each one.
+
+*   **Performance Overhead:** While lightweight, the proxying mechanism does introduce a small amount of performance overhead for each profiled method call. We strongly recommend using the `EnableTiming: false` configuration in performance-sensitive production environments.
+
 ## Advanced Notes & Important Behaviors
 
 Please be aware of the following behaviors to ensure the library works as expected in your application.
 
 ### Dependency Injection: Attribute Wins
 
-If the auto-discovery feature finds a service marked for profiling, **it will overwrite any existing manual registration for that service.**
-
-This is an intentional design choice. The presence of the `[MeasureExecutionTime]` attribute is treated as the definitive source of truth, signaling a clear intent to profile the service.
+If the auto-discovery feature finds a service marked for profiling, **it will overwrite any existing manual registration for that service.** This is an intentional design choice, as the `[MeasureExecutionTime]` attribute is treated as the definitive source of truth.
 
 ### Attribute Placement and Precedence
 
@@ -154,13 +164,3 @@ The library is flexible about where you place the `[MeasureExecutionTime]` attri
 
 *   **For enabling profiling on all methods of a service:** An attribute on the **class** takes precedence over an attribute on the **interface**.
 *   **For profiling a specific method:** An attribute on either the **class method** or the **interface method** will cause it to be profiled (if profiling isn't already enabled for the whole class).
-
-The `AddProfiledServices()` auto-discovery method will find services if the attribute is placed on either the interface or the class.
-
-### Multiple Implementations
-
-The `AddProfiledServices()` auto-discovery feature is designed for scenarios where there is a **one-to-one mapping** between an interface and its implementation. If you have an interface with multiple implementations, you must use **manual registration** for each one.
-
-### Service Lifetime
-
-All services registered by this library, whether through auto-discovery or manually, are registered with a **Scoped lifetime**.

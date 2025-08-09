@@ -197,17 +197,39 @@ namespace Jattac.Libs.Profiling
         {
             if (_executionSummary.Any())
             {
-                Log(LogType.Section, "Execution Summary:");
-                Log(LogType.Section, "-------------------------------------------");
-                Log(LogType.Section, "| Method Name         | Count |  Avg ms  | Min ms | Max ms |");
-                Log(LogType.Section, "-------------------------------------------");
+                // Calculate maximum widths for each column
+                var methodNameTitle = "Method Name";
+                var countTitle = "Count";
+                var avgTitle = "Avg ms";
+                var minTitle = "Min ms";
+                var maxTitle = "Max ms";
 
+                int methodNameWidth = Math.Max(methodNameTitle.Length, _executionSummary.Keys.Max(k => k.Length));
+                int countWidth = Math.Max(countTitle.Length, _executionSummary.Values.Max(v => v.Count.ToString().Length));
+                int avgWidth = Math.Max(avgTitle.Length, _executionSummary.Values.Max(v => (v.TotalTime / v.Count).ToString().Length + 3));
+                int minWidth = Math.Max(minTitle.Length, _executionSummary.Values.Max(v => v.MinTime.ToString().Length + 3));
+                int maxWidth = Math.Max(maxTitle.Length, _executionSummary.Values.Max(v => v.MaxTime.ToString().Length + 3));
+
+                // Header
+                string header = $"| {methodNameTitle.PadRight(methodNameWidth)} | {countTitle.PadLeft(countWidth)} | {avgTitle.PadLeft(avgWidth)} | {minTitle.PadLeft(minWidth)} | {maxTitle.PadLeft(maxWidth)} |";
+                string divider = new string('-', header.Length);
+
+                Log(LogType.Section, "\nExecution Summary:");
+                Log(LogType.Section, divider);
+                Log(LogType.Section, header);
+                Log(LogType.Section, divider);
+
+                // Rows
                 foreach (var entry in _executionSummary)
                 {
-                    var avgTime = entry.Value.TotalTime / entry.Value.Count;
-                    Log(LogType.Section, $"| {entry.Key,-18} | {entry.Value.Count,5} | {avgTime,7} ms | {entry.Value.MinTime,6} ms | {entry.Value.MaxTime,6} ms |");
+                    var avgTime = $"{entry.Value.TotalTime / entry.Value.Count} ms";
+                    var minTime = $"{entry.Value.MinTime} ms";
+                    var maxTime = $"{entry.Value.MaxTime} ms";
+
+                    string row = $"| {entry.Key.PadRight(methodNameWidth)} | {entry.Value.Count.ToString().PadLeft(countWidth)} | {avgTime.PadLeft(avgWidth)} | {minTime.PadLeft(minWidth)} | {maxTime.PadLeft(maxWidth)} |";
+                    Log(LogType.Section, row);
                 }
-                Log(LogType.Section, "-------------------------------------------");
+                Log(LogType.Section, divider);
             }
         }
 
@@ -215,14 +237,27 @@ namespace Jattac.Libs.Profiling
         {
             if (_executionLog.Any())
             {
-                Log(LogType.Section, "Top Execution Times (Slowest):");
-                Log(LogType.Section, "-----------------------------");
+                var methodNameTitle = "Method Name";
+                var timeTitle = "Time";
+
+                int methodNameWidth = Math.Max(methodNameTitle.Length, _executionLog.Values.Max(v => v.Length));
+                int timeWidth = Math.Max(timeTitle.Length, _executionLog.Keys.Max(k => k.ToString().Length + 3));
+
+                string header = $"| {methodNameTitle.PadRight(methodNameWidth)} | {timeTitle.PadLeft(timeWidth)} |";
+                string divider = new string('-', header.Length);
+
+                Log(LogType.Section, "\nTop Execution Times (Slowest):");
+                Log(LogType.Section, divider);
+                Log(LogType.Section, header);
+                Log(LogType.Section, divider);
 
                 foreach (var entry in _executionLog.Reverse())
                 {
-                    Log(LogType.Section, $"| {entry.Value,-20} | {entry.Key,6} ms |");
+                    var execTime = $"{entry.Key} ms";
+                    string row = $"| {entry.Value.PadRight(methodNameWidth)} | {execTime.PadLeft(timeWidth)} |";
+                    Log(LogType.Section, row);
                 }
-                Log(LogType.Section, "-----------------------------");
+                Log(LogType.Section, divider);
             }
         }
 
