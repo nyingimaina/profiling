@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- NuGet Package Details -->
+    <PackageId>Jattac.Libs.Profiling</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Jattac</Authors>
+    <Company>Jattac</Company>
+    <Description>A lightweight, dependency-injection-friendly library for profiling method execution times in .NET applications using a dynamic proxy and attributes.</Description>
+    <PackageTags>profiling performance monitoring execution time dotnet core</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/nyingimaina/profiling.git</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/nyingimaina/profiling.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+</Project>
