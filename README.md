@@ -62,18 +62,19 @@ public class MyOtherService : IMyOtherService
 
 ### 3. Configure Your Application
 
-Add a section to your `appsettings.json` file to control whether profiling is enabled.
+Add a section to your `appsettings.json` file to control the profiler's behavior.
 
 ```json
 {
   "ExecutionTime": {
-    "EnableTiming": true
+    "EnableTiming": true,
+    "UseCultureFormatting": true
   }
 }
 ```
 
--   `EnableTiming: true`: Profiling is enabled.
--   `EnableTiming: false`: Profiling is disabled, and services will be registered without the proxy, incurring no performance overhead.
+-   `EnableTiming: true`: Profiling is enabled. Set to `false` to disable all profiling, which removes any performance overhead.
+-   `UseCultureFormatting: true`: Numbers in the summary tables are formatted with thousand separators for readability (e.g., `1,000`). Set to `false` to output raw, unformatted numbers (e.g., `1000`), which can be easier for some log parsers to ingest.
 
 ### 4. Configure Your Services
 
